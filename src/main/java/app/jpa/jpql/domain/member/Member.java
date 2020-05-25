@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -24,7 +25,7 @@ public class Member {
 
 	private int age;
 
-	@ManyToOne
+	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "TEAM_ID")
 	private Team team;
 
@@ -32,10 +33,6 @@ public class Member {
 		this.name = name;
 		this.age = age;
 		this.team = team;
-	}
-
-	public void changeAge(int age) {
-		this.age = age;
 	}
 
 	@Override

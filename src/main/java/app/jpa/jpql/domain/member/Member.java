@@ -34,9 +34,17 @@ public class Member {
 		this.team = team;
 	}
 
-
 	public void changeAge(int age) {
 		this.age = age;
+	}
+
+	@Override
+	public String toString() {
+		return "Member{" +
+				"id=" + id +
+				", name='" + name + '\'' +
+				", age=" + age +
+				'}';
 	}
 
 }

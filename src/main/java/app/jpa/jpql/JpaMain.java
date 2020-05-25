@@ -26,49 +26,21 @@ public class JpaMain {
 		transaction.begin();
 
 		try {
-			Member member = new Member("name123", 23, null);
-			entityManager.persist(member);
+			for (int i = 0; i < 30; i++) {
+				Member member1 = new Member("name", i, null);
+				entityManager.persist(member1);
+			}
 
 			entityManager.flush();
 			entityManager.clear();
 
-			/**
-			 * 엔티티 프로젝션
-			 * findMembers는 영속성 컨텍스트에서 관리가 될까?
-			 * => yes
-			 */
-			List<Member> findMembers = entityManager.createQuery("select m from Member m", Member.class)
+			List<Member> members = entityManager.createQuery("select m from Member m order by m.age desc", Member.class)
+					.setFirstResult(0)
+					.setMaxResults(10)
 					.getResultList();
 
-			Member findMember = findMembers.get(0);
-			findMember.changeAge(20); // 변경이 된다 (Update 쿼리가 나감)
-
-			/**
-			 * 엔티티 프로젝션
-			 */
-			// select m.team from Member // 묵시적 조인
-			List<Team> findTeams = entityManager.createQuery("select t from Member m join m.team t", Team.class)
-					.getResultList(); // 명시적 조인
-
-			/**
-			 * 임베디드 타입 프로젝션
-			 */
-			List<Address> addresses = entityManager.createQuery("select o.address from Order o", Address.class)
-					.getResultList();
-
-			/**
-			 * 스칼라 타입 프로젝션
-			 *
-			 * 1. Query타입으로 조회
-			 * 2. Object[] 타입으로 조회
-			 * 3. Dto 타입으로 조회
-			 */
-			List<MemberDto> memberDtos = entityManager.createQuery("select new app.jpa.jpql.dto.MemberDto(m.name, m.age) from Member m", MemberDto.class)
-					.getResultList();
-			for (MemberDto memberDto : memberDtos) {
-				System.out.println(memberDto.getName());
-				System.out.println(memberDto.getAge());
-			}
+			System.out.println("size : " + members.size());
+			members.forEach(System.out::println);
 
 			transaction.commit();
 		} catch (Exception e) {

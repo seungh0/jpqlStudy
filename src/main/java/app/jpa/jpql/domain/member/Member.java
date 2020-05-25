@@ -35,4 +35,8 @@ public class Member {
 	}
 
 
+	public void changeAge(int age) {
+		this.age = age;
+	}
+
 }

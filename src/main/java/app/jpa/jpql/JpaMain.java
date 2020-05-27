@@ -31,18 +31,42 @@ public class JpaMain {
 			Member member = new Member("team", 23, team, MemberType.ADMIN);
 			entityManager.persist(member);
 
+			Member member1 = new Member(null, 23, team, MemberType.ADMIN);
+			entityManager.persist(member1);
+
+			Member member2 = new Member("관리자", 23, team, MemberType.ADMIN);
+			entityManager.persist(member2);
+
 			entityManager.flush();
 			entityManager.clear();
 
-			String query = "select m.name, 'Hello', TRUE from Member m where m.type = :type";
-			List<Object[]> result = entityManager.createQuery(query)
-					.setParameter("type", MemberType.ADMIN)
+			String query = "select " +
+					"case when m.age <= 10 then '학생요금'" +
+					"	  when m.age >= 60 then '경로요금'" +
+					"	  else '일반요금'" +
+					"end " +
+					"from Member m";
+			List<String> result = entityManager.createQuery(query, String.class)
 					.getResultList();
 
-			for (Object[] objects : result) {
-				System.out.println(objects[0]);
-				System.out.println(objects[1]);
-				System.out.println(objects[2]);
+			for (String s : result) {
+				System.out.println(s);
+			}
+
+			String query1 = "select coalesce(m.name, '이름 없는 회원') as username from Member m";
+			List<String> result1 = entityManager.createQuery(query1, String.class)
+					.getResultList();
+
+			for (String s : result1) {
+				System.out.println(s);
+			}
+
+			String query2 = "select nullif(m.name, '관리자') from Member m";
+			List<String> result2 = entityManager.createQuery(query2, String.class)
+					.getResultList();
+
+			for (String s : result2) {
+				System.out.println(s);
 			}
 
 			transaction.commit();

@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -29,10 +31,14 @@ public class Member {
 	@JoinColumn(name = "TEAM_ID")
 	private Team team;
 
-	public Member(String name, int age, Team team) {
+	@Enumerated(EnumType.STRING)
+	private MemberType type;
+
+	public Member(String name, int age, Team team, MemberType type) {
 		this.name = name;
 		this.age = age;
 		this.team = team;
+		this.type = type;
 	}
 
 	@Override
@@ -41,6 +47,7 @@ public class Member {
 				"id=" + id +
 				", name='" + name + '\'' +
 				", age=" + age +
+				", type=" + type +
 				'}';
 	}
 

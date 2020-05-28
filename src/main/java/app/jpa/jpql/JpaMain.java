@@ -8,6 +8,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
 import javax.persistence.Persistence;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -28,46 +29,55 @@ public class JpaMain {
 			Team team = new Team("team");
 			entityManager.persist(team);
 
-			Member member = new Member("team", 23, team, MemberType.ADMIN);
+			Member member = new Member("member1", 23, team, MemberType.ADMIN);
 			entityManager.persist(member);
 
-			Member member1 = new Member(null, 23, team, MemberType.ADMIN);
-			entityManager.persist(member1);
-
-			Member member2 = new Member("관리자", 23, team, MemberType.ADMIN);
+			Member member2 = new Member("member2", 25, team, MemberType.ADMIN);
 			entityManager.persist(member2);
 
 			entityManager.flush();
 			entityManager.clear();
 
-			String query = "select " +
-					"case when m.age <= 10 then '학생요금'" +
-					"	  when m.age >= 60 then '경로요금'" +
-					"	  else '일반요금'" +
-					"end " +
-					"from Member m";
+			/**
+			 * 상태 필드(state filed): 경로 탐색의 끝, 탐색X
+			 */
+			String query = "select m.name From Member m";
+
 			List<String> result = entityManager.createQuery(query, String.class)
 					.getResultList();
+			result.forEach(System.out::println);
 
-			for (String s : result) {
-				System.out.println(s);
-			}
-
-			String query1 = "select coalesce(m.name, '이름 없는 회원') as username from Member m";
+			/**
+			 * 단일 값 연관 경로 : 묵시적 내부 조인(inner join) 발생,  탑색 O
+			 */
+			String query1 = "select m.team.name From Member m"; // 묵시적 내부 조인 => 쿼리 튜닝이 어려움 => 최대한 안쓰도록.
 			List<String> result1 = entityManager.createQuery(query1, String.class)
 					.getResultList();
+			result1.forEach(System.out::println);
 
-			for (String s : result1) {
-				System.out.println(s);
-			}
-
-			String query2 = "select nullif(m.name, '관리자') from Member m";
-			List<String> result2 = entityManager.createQuery(query2, String.class)
+			/**
+			 * 컬렉션 값 연관 경로: 묵시적 내부 조인 발생, 탐색X
+			 */
+			String query2 = "select t.members From Team t";
+			List<Collection> result2 = entityManager.createQuery(query2, Collection.class)
 					.getResultList();
+			System.out.println(result2);
 
-			for (String s : result2) {
-				System.out.println(s);
-			}
+			String query3 = "select m.name From Team t join t.members m";
+			List<String> result3 = entityManager.createQuery(query3, String.class)
+					.getResultList();
+			result3.forEach(System.out::println);
+
+			/**
+			 * 1. 명시적 조인 : join 키워드를 직접 사용
+			 * select m from Member m join m.team t
+			 *
+			 * 2. 묵시적 조인: 경로 표현식에 의해 묵시적으로 SQl 조인 발생(내부 조인만 가능)
+			 * select m.team from Member m
+			 *
+			 * 결과적으로 묵시적 내부 조인을 쓰지 말자!! (쿼리 튜닝도 어렵고.. 보기도 힘듬)
+			 * => 명시적 내부 조인을 사용합시다.
+			 */
 
 			transaction.commit();
 		} catch (Exception e) {

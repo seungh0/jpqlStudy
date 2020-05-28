@@ -44,20 +44,41 @@ public class JpaMain {
 			entityManager.clear();
 
 			/**
-			 * Named 쿼리 - 정적 쿼리
+			 * 벌크 연산
 			 *
-			 * - 미래 정의해서 이름을 부여해두고 사용하는 JPQL
-			 * - 정적 쿼리
-			 * - 어노테이션, XML에 정의
-			 * - 애플리케이션 로딩 시점에 초기화 후 재사용!!!
-			 * - 애플리케이션 로딩 시점에 쿼리를 검증!!!
+			 * 재고가 10개 미만인 모든 상품의 가격을 10% 상승하려면?
+			 * - JPA 변경 감지 기능으로 실행하려면 너무 많은 SQL 실행
+			 * 1. 재고가 10개 미만인 상품을 리스트로 조회한다.
+			 * 2. 상품 엔티티의 가격을 10% 증가한다.
+			 * 3. 트랜잭션 커밋 시점에 변경감지가 동작한다
+			 *
+			 * => 변경된 데이터가 100개라면 100번의 UPDATE SQL이 실행된다.
+			 *
+			 * UPDATE, DELETE 모두 지원
 			 */
 
-			List<Member> members = entityManager.createNamedQuery("Member.findByName", Member.class)
-					.setParameter("name", "member2")
-					.getResultList();
+			// FLUSH 자동 호출 (JPQL 호출시 flush() 자동)
+			int resultCounts = entityManager.createQuery("update Member m set m.age = 20")
+					.executeUpdate();
+			System.out.println(resultCounts);
 
-			members.forEach(System.out::println);
+			/**
+			 * 벌크 연산 주의
+			 *
+			 * 벌크 연산은 영속성 컨텍스트를 무시하고 데이터베이스에 직접 쿼리
+			 * 방법 1. 벌크 연산을 먼저 실행
+			 * 방법 2. 벌크 연산 수행 후 영속성 컨텍스트 초기화 !**
+			 */
+
+			Member findMember = entityManager.find(Member.class, member1.getId());
+			System.out.println(findMember.getAge()); //  23
+
+			/**
+			 * 해결 방법
+			 */
+			entityManager.clear();
+			Member findMember1 = entityManager.find(Member.class, member1.getId());
+			System.out.println(findMember1.getAge()); //  20
 
 			transaction.commit();
 		} catch (Exception e) {

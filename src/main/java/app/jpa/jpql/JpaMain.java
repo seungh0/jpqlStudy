@@ -8,7 +8,6 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
 import javax.persistence.Persistence;
-import java.util.Collection;
 import java.util.List;
 
 /**
@@ -26,57 +25,86 @@ public class JpaMain {
 		transaction.begin();
 
 		try {
-			Team team = new Team("team");
-			entityManager.persist(team);
+			Team teamA = new Team("teamA");
+			entityManager.persist(teamA);
 
-			Member member = new Member("member1", 23, team, MemberType.ADMIN);
-			entityManager.persist(member);
+			Team teamB = new Team("teamB");
+			entityManager.persist(teamB);
 
-			Member member2 = new Member("member2", 25, team, MemberType.ADMIN);
+			Member member1 = new Member("member1", 23, teamA, MemberType.ADMIN);
+			entityManager.persist(member1);
+
+			Member member2 = new Member("member2", 25, teamA, MemberType.ADMIN);
 			entityManager.persist(member2);
+
+			Member member3 = new Member("member3", 27, teamB, MemberType.USER);
+			entityManager.persist(member3);
 
 			entityManager.flush();
 			entityManager.clear();
 
+			String query1 = "select m from Member m";
+			List<Member> members1 = entityManager.createQuery(query1, Member.class)
+					.getResultList();
+
+			for (Member m : members1) {
+				System.out.println(m.getName());
+				System.out.println(m.getTeam().getName()); // 여기서 Team은 프록시 객체
+			}
+
+			// 회원1, 팀A(SQL),
+			// 회원2, 팀A(1차 캐시)
+			// 회원3, 팀B(SQL)
+
 			/**
-			 * 상태 필드(state filed): 경로 탐색의 끝, 탐색X
+			 * 회원 100명 -> 100개의 쿼리 (N + 1 문제)
 			 */
-			String query = "select m.name From Member m";
-
-			List<String> result = entityManager.createQuery(query, String.class)
-					.getResultList();
-			result.forEach(System.out::println);
 
 			/**
-			 * 단일 값 연관 경로 : 묵시적 내부 조인(inner join) 발생,  탑색 O
-			 */
-			String query1 = "select m.team.name From Member m"; // 묵시적 내부 조인 => 쿼리 튜닝이 어려움 => 최대한 안쓰도록.
-			List<String> result1 = entityManager.createQuery(query1, String.class)
-					.getResultList();
-			result1.forEach(System.out::println);
-
-			/**
-			 * 컬렉션 값 연관 경로: 묵시적 내부 조인 발생, 탐색X
-			 */
-			String query2 = "select t.members From Team t";
-			List<Collection> result2 = entityManager.createQuery(query2, Collection.class)
-					.getResultList();
-			System.out.println(result2);
-
-			String query3 = "select m.name From Team t join t.members m";
-			List<String> result3 = entityManager.createQuery(query3, String.class)
-					.getResultList();
-			result3.forEach(System.out::println);
-
-			/**
-			 * 1. 명시적 조인 : join 키워드를 직접 사용
-			 * select m from Member m join m.team t
+			 * Fetch Join
 			 *
-			 * 2. 묵시적 조인: 경로 표현식에 의해 묵시적으로 SQl 조인 발생(내부 조인만 가능)
-			 * select m.team from Member m
+			 * SQL 조인 종류 X.
+			 * JPQL에서 성능 최적화를 위해 제공하는 기능.
+			 * 연관된 엔티티나 컬렉션을 SQL 한 번에 함께 조회하는 기능.
+			 */
+
+			/**
+			 * SELECT M.*, T.* FROM MEMBER M
+			 * INNER JOIN TEAM T ON M.TEAM_ID = T.ID
+			 */
+			String query = "select m from Member m join fetch m.team";
+			List<Member> members = entityManager.createQuery(query, Member.class)
+					.getResultList();
+
+			for (Member m : members) {
+				System.out.println(m.getName());
+				System.out.println(m.getTeam().getName()); // 여기서 Team은 프록시 객체가 아님.
+			}
+
+			/**
+			 * 컬렉션 Fetch Join
+			 * 일대다 join일 경우, distinct 필요.
 			 *
-			 * 결과적으로 묵시적 내부 조인을 쓰지 말자!! (쿼리 튜닝도 어렵고.. 보기도 힘듬)
-			 * => 명시적 내부 조인을 사용합시다.
+			 * JPQL의 DISTINCT 2가지 기능 제공
+			 * 1. SQL에 DISTINCT를 추가
+			 * 2. 애플리케이션에서 엔티티 중복 제거
+			 */
+			String query2 = "select distinct t From Team t join fetch t.members";
+			List<Team> teams = entityManager.createQuery(query2, Team.class)
+					.getResultList();
+			for (Team team : teams) {
+				System.out.println(team.getName());
+				for (Member member : team.getMembers()) {
+					System.out.println(member);
+				}
+			}
+
+			/**
+			 * 일반 조인과 페치 조인의 차이
+			 *
+			 * 1. 일반 조인 실행시 연관된 엔티티를 함께 조회하지 않음.
+			 * 2. 페치 조인을 사용할 때만 연관된 엔티티도 함께 조회(즉시 로딩)
+			 *  = 페치 조인은 객체 그래프르 SQL 한번에 조회하는 개념
 			 */
 
 			transaction.commit();

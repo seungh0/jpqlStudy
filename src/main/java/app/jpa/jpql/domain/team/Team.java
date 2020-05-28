@@ -3,6 +3,7 @@ package app.jpa.jpql.domain.team;
 import app.jpa.jpql.domain.member.Member;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -23,6 +24,7 @@ public class Team {
 
 	private String name;
 
+	@BatchSize(size = 100) // 방법 1
 	@OneToMany(mappedBy = "team")
 	private List<Member> members = new ArrayList<>();
 

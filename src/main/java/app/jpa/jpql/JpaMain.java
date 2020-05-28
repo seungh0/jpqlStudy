@@ -107,6 +107,62 @@ public class JpaMain {
 			 *  = 페치 조인은 객체 그래프르 SQL 한번에 조회하는 개념
 			 */
 
+			/**
+			 * 페치 조인의 한계
+			 * 1. 페치 조인 대상에는 별칭을 줄 수 없다.
+			 * ex) select t From Team t join fetch t.members as m where m.name =....
+			 * => 데이터 정합성 문제
+			 *
+			 * 2. 둘 이상의 컬렉션은 페치 조인할 수 없다. 1: n : n
+			 * => 데이터 정합성 문제
+			 *
+			 * 3. 컬렉션을 페치 조인하면 페이징  API(setFirstResult, setMaxResults)를 사용할 수 없다.
+			 */
+
+
+			/**
+			 * 3번문제 예시
+			 */
+			String query3 = "select t From Team t";
+			List<Team> team1 = entityManager.createQuery(query3, Team.class)
+					.setFirstResult(0)
+					.setMaxResults(2)
+					.getResultList();
+
+			for (Team team : team1) {
+				System.out.println(team.getName());
+				System.out.println(team.getMembers().size());
+
+				for (Member member : team.getMembers()) {
+					System.out.println(member);
+				}
+
+				// Team 불러오는 쿼리 1
+				// Team1의 Member 불러오는 쿼리 1
+				// Team2의 Member 불러오는 쿼리 1
+				// => 성능 안좋음
+			}
+
+			/**
+			 * 해결방법 Batch Size 지정 (Team.members = @BatchSize(size = 100)
+			 *
+			 * select members where member.teamId in (1, 2)
+			 */
+
+			/**
+			 * 정리
+			 * 1. 연관된 엔티티들을 SQL 한번으로 조회 - 성능 최적화
+			 * 2. 엔티티에 직접 적용하는 글로벌 로딩 전략보다 우선함
+			 * @OntToMany(fetch = FetchType.LAZY) // 글로벌 로딩 전략 보다 fetch 조인을 진행.
+			 * 3. 실무에서 글로벌 로딩 전략은 모두 지연로딩
+			 * 4. 최적화가 필요한 곳은 페치 조인 적용 (N+1 문제가 발생하는 곳에 fetch Join 적용)
+			 *
+			 * 5. 모든 것을 페치 조인으로 해결 할 수 는 없음
+			 * 6. 페치 조인은 객체 그래프를 유지할 때 사용하면 효과적
+			 * 7. 여러 테이블을 조인해서 엔티티가 가진 모양이 아닌 전혀 다른 결과를 내야하면, 페치 조인보다는 일반 조인을
+			 * 사용하고, 필요한 데이터들만 조회해서 DTO로 반환하는 것이 효과적.
+			 */
+
 			transaction.commit();
 		} catch (Exception e) {
 			entityManager.close();

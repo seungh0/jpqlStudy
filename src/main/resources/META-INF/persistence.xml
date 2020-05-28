@@ -15,6 +15,9 @@
             <property name="hibernate.id.new_generator_mappings" value="true"/>
 
             <property name="hibernate.hbm2ddl.auto" value="create"/>
+
+            <!-- Batch Size 지정 방법2: 글로벌 방법-->
+            <property name="hibernate.default_batch_fetch_size" value="100"/>
         </properties>
     </persistence-unit>
 </persistence>

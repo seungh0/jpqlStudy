@@ -44,42 +44,20 @@ public class JpaMain {
 			entityManager.clear();
 
 			/**
-			 * JPQL에서 엔티티를 직접 사용하면, SQL에서 해당 엔티티의 기본 키 값을 사용
+			 * Named 쿼리 - 정적 쿼리
 			 *
-			 * [JPQL]
-			 * select count(m.ind) from Member m // 엔티티의 아이디를 사용
-			 * select count(m) from Member m // 엔티티를 직접 사용
-			 *
-			 * [SQL]
-			 * select count(m.id) as cnt from Member m
+			 * - 미래 정의해서 이름을 부여해두고 사용하는 JPQL
+			 * - 정적 쿼리
+			 * - 어노테이션, XML에 정의
+			 * - 애플리케이션 로딩 시점에 초기화 후 재사용!!!
+			 * - 애플리케이션 로딩 시점에 쿼리를 검증!!!
 			 */
 
-			String query = "select m From Member m where m = :member";
-			Member findMember = entityManager.createQuery(query, Member.class)
-					.setParameter("member", member1)
-					.getSingleResult();
-
-			System.out.println(findMember);
-			// 식별자(id)를 비교
-
-			String query1 = "select m From Member m where m.id = :memberId";
-			Member findMember1 = entityManager.createQuery(query1, Member.class)
-					.setParameter("memberId", member1.getId())
-					.getSingleResult();
-
-			System.out.println(findMember1);
-			// 이 역시 당연히 식별자(id)로 비교)
-
-			/**
-			 * 엔티티 직접 사용 - FK
-			 */
-			String query2 = "select m from Member m where m.team = :team";
-			// select m.* from Member m wheer m.team_id = ?
-			List<Member> memberList = entityManager.createQuery(query2, Member.class)
-					.setParameter("team", teamA)
+			List<Member> members = entityManager.createNamedQuery("Member.findByName", Member.class)
+					.setParameter("name", "member2")
 					.getResultList();
 
-			memberList.forEach(System.out::println);
+			members.forEach(System.out::println);
 
 			transaction.commit();
 		} catch (Exception e) {
